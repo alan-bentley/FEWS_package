@@ -203,12 +203,17 @@ FEWS <-  function(times, logprice, id, window_length, weight = NULL,
   fews_df <- get_fews_df (fe_list = fe_list,
                           window_length = window_length,
                           splice_pos = splice_pos)
-
+  
+    # Make the FEWS from the fe_list
+  fewc_df <- get_fewc_df (fe_list = fe_list,
+                          window_length = window_length,
+                          chain_pos = splice_pos)
 
   cat("\nFinished. It took", round(Sys.time() - timer, 2), "seconds\n\n")
 
   # Wrap the output in a list and return
   list(fews = fews_df,
+       fewc = fewc_df,
        fixed_effects = bind_rows(fe_list),
        diagnostics = diagnostics)
 }
