@@ -152,16 +152,13 @@ get_win_dates <- function(st_date, window_length){
 #' gm_mean(x)
 #'
 #' @export
+#function in original package didn't appear to deal well with 'NA' values, so replaced with this version
 gm_mean <- function(x, na.rm = TRUE){
-  # Implementation Stolen from here:
-  # https://stackoverflow.com/questions/2602583/geometric-mean-is-there-a-built-in
-
-  # This is a safer implementation than using PRODUCT () as floating point
-  # errors are vrey likely when using PRODUCT () for many large or small numbers
-  exp(sum(log(x[x > 0]), na.rm = na.rm) / length(x))
+  if(na.rm == TRUE){
+    x <- x[!is.na(x)]
+  }
+  return(exp(mean(log(x))))
 }
-
-
 
 #' Index levels to Price movements
 #'
