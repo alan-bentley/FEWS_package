@@ -4,6 +4,8 @@ FEWS
 
 The FEWS method was introduced by Frances Krsinich in [The FEWS index: Fixed effects with a window splice](https://www.researchgate.net/publication/303888203_The_FEWS_index_Fixed_effects_with_a_window_splice). This FEWS package aims to provide a flexible implementation of that method, with some additional splicing options available for users. As well as producing an index, the package provides users with some diagnostic results on the FEWS calculation which may be of use in data exploration, or in monitoring of production systems. In addition the package provides some utilities commonly used by Pricing teams from Statistical Agencies such as converting between indexes and movements.
 
+This forked version includes chained fixed effects windows (FEWC), as introduced by Alan Bentley in [Rentals for housing: A model-based estimator of inflation from administrative data](https://www.researchgate.net/publication/328062386_Rentals_for_housing_A_model-based_estimator_of_inflation_from_administrative_data).
+
 Installation
 ============
 
@@ -11,7 +13,7 @@ FEWS is still in development, with the intention that it will exist on CRAN. For
 
 ``` r
 
-devtools::install_github("Donal-lynch/FEWS_package")
+devtools::install_github("alan-bentley/FEWS_package")
 
 # Once installed, the package can be loaded as usual
 library(FEWS)
