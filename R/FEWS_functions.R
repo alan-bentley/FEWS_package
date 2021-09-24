@@ -291,5 +291,157 @@ splice_update <- function (win_old, win_new, splice_pos){
 }
 
 
+get_fewc_df <- function (fe_list, window_length, chain_pos) {
+  # Chain the windows together to produce a continuous time series of indexes
+  # Arguments:
+  #   fe_list - output from get_fe_list. See that  function for details
+  #   window_length -  window_length - the number of time_units per window
+  #   chain_pos is analogous to splice_pos for non-revisable indexes
+
+  # switch to analogus chain_pos from splice position
+
+  if(!is.numeric(chain_pos)){
+    chain_pos <- switch(chain_pos,
+                        "alan" = "mean", # splice position "alan" is analogous to chain_pos mean
+                        "mean" = "mean",
+                        "movement" = window_length,
+                        "half" = ceiling(window_length/2)+1,
+                        "window" = 2)
+  }
+
+
+  if (chain_pos == "mean") {
+
+
+    fe_all = bind_rows(fe_list)
+
+    # calc period-on-period ratio changes
+
+
+    ratios <- c()
+
+    for (i in 1:length(fe_list)) {
+
+      win <- fe_all[fe_all$window_id == i,]
+
+      period_ratio <- win$fe_indexes/lag(win$fe_indexes)
+
+      ratio_row <- data.frame(price_date = win$price_date,
+                              period_ratio = period_ratio)
+
+      ratios <- rbind(ratios, ratio_row)
+
+    }
+
+    all_dates <- unique(fe_all$price_date)
+
+    # Initialise the df with a 1 for the first time period
+
+    fewc <- data.frame(price_date = all_dates[1],
+                       fe_indexes = 1,
+                       window_id = "mean")
+
+
+    for (i in 2: length(all_dates)){
+
+      ratios_period <- ratios[ratios$price_date == all_dates[i],]
+
+      geomean_ratios <- gm_mean(ratios_period$period_ratio)
+
+      # Get the previous FEWC index value
+      old_fewc <- fewc$fe_indexes[nrow(fewc)]
+
+      # Get the "new" FEWC index value
+      new_fews <- old_fewc * geomean_ratios
+
+      new_row <- data.frame(price_date = unique(ratios_period$price_date),
+                            fe_indexes = new_fews,
+                            window_id = "mean")
+
+      fewc <- rbind(fewc, new_row)
+
+    }
+
+  }
+
+  else{
+
+    first_date <- fe_list[[1]]$price_date[chain_pos-1]
+    second_date <- fe_list[[1]]$price_date[chain_pos]
+
+
+    fewc <- data.frame(price_date = first_date,
+                       fe_indexes = 1,
+                       window_id = 1)
+
+    row2 <- data.frame(price_date = second_date,
+                       fe_indexes = fe_list[[1]]$fe_indexes[chain_pos]/fe_list[[1]]$fe_indexes[chain_pos-1],
+                       window_id = 1)
+
+    fewc <- rbind(fewc, row2)
+
+    # Loop over the windows, starting at the second window.
+    for (i in 2: length(fe_list)){
+
+      old_window <- fe_list[[i - 1]]$fe_indexes
+      new_window <- fe_list[[i]]$fe_indexes
+
+      # Get the previous FEWC index value
+      old_fewc <- fewc$fe_indexes[nrow(fewc)]
+
+      update_factor <- chain_update (old_window,
+                                     new_window,
+                                     chain_pos = chain_pos)
+
+      # Get the "new" FEWC index value
+      new_fews <- old_fewc * update_factor
+
+      # build up the new row
+      # price_date is the last date in the current window
+      # first_date <- head(fe_list[[i]]$price_date, chain_pos-1)
+
+      price_date <- fe_list[[i]]$price_date[chain_pos]
+
+
+      new_row <- data.frame(price_date = price_date,
+                            fe_indexes = new_fews,
+                            window_id = i)
+
+      fewc <- rbind(fewc, new_row)
+    }
+  }
+
+  return (fewc)
+}
+
+
+chain_update <- function (win_old, win_new, chain_pos){
+  # Calculate the update factor for chaining two windows
+  # Arguments
+  #   win_old - the indexes for the previous window
+  #   win_new - the indexes for the current window
+  #   chain_pos - an integer for the time period on which to chain
+  #     the windows.
+  #
+  # Returns
+  #   update_factor -  a single number which is the splice update factor
+
+  stopifnot(length(win_old) == length(win_new))
+
+  # # As the old window starts 1 entery earlier in time than the new window,
+  # # adding a NaN to the start of the new window makes the indexes of the 2
+  # # windows align. This value is never used in the calculations
+  win_new <- c(NaN, win_new)
+
+  w <- length(win_new)
+
+  Pt_new <- win_new[chain_pos]
+  Pt1_new <- win_new[chain_pos+1]
+
+  update_factor <- (Pt1_new / Pt_new)
+
+  return (update_factor)
+}
+
 
 
